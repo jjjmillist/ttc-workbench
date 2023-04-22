@@ -1,0 +1,4 @@
+#!/bin/bash
+
+timestamp=$(date +%y-%m-%d@%H:%M:%S)
+code scripts/$timestamp.py
