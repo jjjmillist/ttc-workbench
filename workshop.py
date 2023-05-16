@@ -53,6 +53,14 @@ def dump_details(output_directory):
             print(f"{name}=={version}", file=file)
 
 
+def read_output_file(output_file):
+    with open(output_file, "rb") as output_file:
+        buffer = output_file.read()
+        decoded = buffer.decode("utf-8")
+        predictions = decoded.split("\0")
+        return predictions
+
+
 class OutputWriter:
 
     def __init__(self, filepath, debug=False):
