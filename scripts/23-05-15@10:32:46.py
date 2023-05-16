@@ -99,6 +99,9 @@ def old_predict(model, tokenizer, prompt, timer, stopping_strategy=None, k=10, b
 
 
 def predict(model, tokenizer, prompt, timer, stopping_strategy=None, k=10, batch_size=10, max_tokens=1024):
+    if torch.is_grad_enabled():
+        print("WARNING! You are running prediction without no_grad(). You are likely to run out of memory.")
+
     torch.manual_seed(0)
 
     inputs = tokenizer([prompt] * batch_size, return_tensors="pt").to("cuda:0")
@@ -174,7 +177,7 @@ run_timer = TimedInterval()
 if __name__ == "__main__":
     print("Started")
 
-    model_uri = "codeparrot/codeparrot"
+    model_uri = "Daoguang/PyCodeGPT"
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_uri)
     model = transformers.AutoModelForCausalLM.from_pretrained(model_uri)
@@ -196,32 +199,55 @@ def hello_world():
 
 """
 
+    codeparrot_prompt = """\
+# Write a python function to find the length of the longest sublists.
+def Find_Max_Length(lst):  
+    maxLength = max(len(x) for x in lst )
+    return maxLength 
+
+# Write a function to find the directrix of a parabola.
+def parabola_directrix(a, b, c): 
+  directrix=((int)(c - ((b * b) + 1) * 4 * a ))
+  return directrix
+
+# Write a python function to find the index of smallest triangular number with n digits. https://www.geeksforgeeks.org/index-of-smallest-triangular-number-with-n-digits/
+import math 
+def find_Index(n): 
+    x = math.sqrt(2 * math.pow(10,(n - 1)))
+    return round(x)
+
+# Write a function to find the shared elements from the given two lists.
+def similar_elements(test_tup1, test_tup2):
+
+"""
+
     seconds_so_far = 0
     bad = 198
-    with run_timer:
-        for prompt in [hello_prompt]:
-            batch_timer = run_timer.subinterval("predict")
-            batch_timer.put("prompt", prompt)
-            with batch_timer:
-                responses = old_predict(
-                    model,
-                    tokenizer,
-                    prompt,
-                    stopping_strategy=never_stop,
-                    k=10,
-                    batch_size=batch_size,
-                    timer=batch_timer,
-                    max_tokens=500
-                )
+    with torch.no_grad():
+        with run_timer:
+            for prompt in [hello_prompt]:
+                batch_timer = run_timer.subinterval("predict")
+                batch_timer.put("prompt", prompt)
+                with batch_timer:
+                    responses = predict(
+                        model,
+                        tokenizer,
+                        prompt,
+                        stopping_strategy=never_stop,
+                        k=10,
+                        batch_size=batch_size,
+                        timer=batch_timer,
+                        max_tokens=1024
+                    )
 
-            # for snippet, writer in zip(responses, writers):
-            #     writer.write(snippet)
+                # for snippet, writer in zip(responses, writers):
+                #     writer.write(snippet)
 
-            n_done += 1
-            seconds_so_far += batch_timer.duration
-            secs_per_prompt = seconds_so_far / n_done
-            eta = ((n_prompts - n_done) * secs_per_prompt) / 60
-            print(f"{n_done}/{n_prompts} - {secs_per_prompt:.2f}spp - eta +{eta:.2f}m")
+                n_done += 1
+                seconds_so_far += batch_timer.duration
+                secs_per_prompt = seconds_so_far / n_done
+                eta = ((n_prompts - n_done) * secs_per_prompt) / 60
+                print(f"{n_done}/{n_prompts} - {secs_per_prompt:.2f}spp - eta +{eta:.2f}m")
 
     # with open(root / "timing.pickle", "wb") as file:
     #     pickle.dump(run_timer, file)

@@ -9,7 +9,7 @@ if __name__ == "__main__":
     all_snippets = []
     for i in range(30):
         with open(root / f"seed_{i}_prompts.pickle", "rb") as file:
-            prompts = pickle.load(file)        
+            prompts = pickle.load(file)
             
         for j in range(20):
             filepath = root / f"seed_{i}" / f"output_{j}"
@@ -17,5 +17,7 @@ if __name__ == "__main__":
                 snippets = read_output_file(filepath)
                 all_snippets += [p + s for p, s in zip(prompts, snippets)]
 
-    tokenizer = transformers.AutoTokenizer.from_pretrained("codeparrot/codeparrot", return_tensor="pt")
-    result = tokenizer(all_snippets[:10], padding=False)
+    tokenizer = transformers.AutoTokenizer.from_pretrained("codeparrot/codeparrot")
+    result = tokenizer(all_snippets[:1], padding=False)
+
+    print(all_snippets[0])
