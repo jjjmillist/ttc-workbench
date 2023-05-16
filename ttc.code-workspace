@@ -2,7 +2,12 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../../../Datasets"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"typewriterAutoScroll.enable": false
+	}
 }

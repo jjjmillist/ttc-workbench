@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sbatch sbatch/sbatch_wrapper.sh $@
+sbatch workshop/sbatch/sbatch_wrapper.sh $@
