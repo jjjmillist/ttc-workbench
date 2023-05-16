@@ -101,7 +101,7 @@ run_timer = TimedInterval()
 if __name__ == "__main__":
     print("Started")
 
-    model_uri = "Daoguang/PyCodeGPT"
+    model_uri = "codeparrot/codeparrot"
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_uri)
     model = transformers.AutoModelForCausalLM.from_pretrained(model_uri)
