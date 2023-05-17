@@ -5,7 +5,7 @@ from matplotlib.ticker import MultipleLocator
 
 
 if __name__ == "__main__":
-    with open("results/pycodegpt-mbpp-15-05-23@15:22:26/timing.pickle", "rb") as file:
+    with open("results/16-05-23@10:47:49/timing.pickle", "rb") as file:
         timing = pickle.load(file)
     
     token_context_size = []
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     forward_duration = np.array(forward_duration)
 
     sorted_indices = np.argsort(token_duration)
-    m = sorted_indices[:-4] # outlier mask
+    m = sorted_indices[:-500] # outlier mask
 
     ms_per_token = 1000 * token_duration / slice_sizes
 
@@ -56,13 +56,12 @@ if __name__ == "__main__":
         "o"
     )
     
-    pyplot.yticks(range(1, 11))
     pyplot.ylabel("Batch size")
     pyplot.xlabel("Milliseconds per token")
 
     pyplot.savefig("output.png")
 
-    locus = np.where(slice_sizes[m] == 10)
+    locus = np.where(slice_sizes[m] == 100)
     max_time_per_token_ms = np.max(ms_per_token[m][locus])
     best_possible_total_token_duration = max_time_per_token_ms * n_tokens_generated / 1000
 
