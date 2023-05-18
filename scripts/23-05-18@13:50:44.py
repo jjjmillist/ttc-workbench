@@ -28,77 +28,37 @@ if __name__ == "__main__":
     
     generated = []
     for _ in range(10):
+        print(inputs.keys())
+        print(shape(inputs["input_ids"]))
+        print(shape(inputs["attention_mask"]))
+        print(inputs["attention_mask"].sum(axis=1, dtype=torch.int64))
         with torch.no_grad():
             outputs = model(**inputs)
+
+        print(shape(outputs.past_key_values))
+        print()
 
         next_tokens = outputs.logits[:, -1, :].max(axis=-1).indices
 
         generated.append(tokenizer.decode(next_tokens))
         
-        insertion_points = inputs.attention_mask.sum(axis=1, dtype=torch.int64)
-        # new_column = torch.tensor(tokenizer.pad_token_id).repeat(2).to("cuda:0")    
-        # new_inputs = torch.cat((inputs.input_ids, new_column[:, None]), dim=1)
-        # new_inputs.scatter_(1, insertion_points[:, None], next_tokens[:, None])
+        insertion_points = inputs["attention_mask"].sum(axis=1, dtype=torch.int64)
+        new_column = torch.tensor(tokenizer.pad_token_id).repeat(2).to("cuda:0")    
+        new_inputs = torch.cat((inputs["input_ids"], new_column[:, None]), dim=1)
+        new_inputs.scatter_(1, insertion_points[:, None], next_tokens[:, None])
 
-        mask = inputs.attention_mask
-        new_mask_column = torch.zeros((len(inputs.input_ids), 1)).to("cuda:0")
+        mask = inputs["attention_mask"]
+        new_mask_column = torch.zeros((len(inputs["input_ids"]), 1)).to("cuda:0")
         new_mask = torch.cat((mask, new_mask_column), dim=1)
         new_mask.scatter_(1, insertion_points[:, None], torch.ones(2, 1).to("cuda:0"))
 
-        inputs.input_ids = next_tokens[:, None]
-        inputs.attention_mask = new_mask
-        inputs.past_key_values = outputs.past_key_values
+        # inputs["input_ids"] = new_inputs
+        # inputs["attention_mask"] = new_mask
+        # inputs.past_key_values = outputs.past_key_values
 
-        print(shape(inputs.attention_mask))
-        print(shape(inputs.past_key_values))
-        print()
 
-        # inputs = {
-        #     "input_ids": next_tokens[:, None],
-        #     "attention_mask": new_mask,
-        #     "past_key_values": outputs.past_key_values
-        # }
-
-    print(generated)
-
-    exit()
-
-    last_token_ids = []
-    past_kvs = []
-    for prompt in [short_prompt, long_prompt]:
-        
-        prompt_length = inputs["input_ids"].shape[1]
-        print(prompt_length)
-        
-        with torch.no_grad():
-            outputs = model(**inputs)
-
-        argmax = outputs.logits[:, -1].argmax()
-        
-        last_token_ids.append(argmax)
-        past_kvs.append(outputs.past_key_values)
-
-        print(shape(past_kvs[-1]))
-
-    # new_layers = []
-    # for layer1, layer2 in zip(*past_kvs):
-    #     new_layers.append(
-    #         (
-    #             [layer1[0][0], layer2[0][0]],
-    #             [layer1[1][0], layer2[1][0]]
-    #         )
-    #     )
-
-    # inputs = {
-    #     "input_ids": torch.tensor(last_token_ids).to("cuda:0"),
-    #     "past_key_values": new_layers
-    # }
-
-    # model(**inputs)
-
-    batch_size = 2
-    batched_past_kvs = []
-    for i in range(len(past_kvs[0])):
-        batched_past_kvs.append(torch.cat([past_kvs[0][i], past_kvs[1][i]]))
-
-    print(shape(batched_past_kvs))
+        inputs = {
+            "input_ids": next_tokens,
+            # "attention_mask": new_mask,
+            "past_key_values": outputs.past_key_values
+        }
