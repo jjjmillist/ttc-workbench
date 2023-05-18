@@ -25,34 +25,41 @@ if __name__ == "__main__":
     model.to("cuda:0")
 
     inputs = tokenizer([short_prompt, long_prompt], padding=True, return_tensors="pt").to("cuda:0")
-    with torch.no_grad():
-        outputs = model(**inputs)
-
-    next_tokens = outputs.logits[:, -1, :].max(axis=-1).indices
     
-    insertion_points = inputs.attention_mask.sum(axis=1)
-    # new_column = torch.tensor(tokenizer.pad_token_id).repeat(2).to("cuda:0")    
-    # new_inputs = torch.cat((inputs.input_ids, new_column[:, None]), dim=1)
-    # new_inputs.scatter_(1, insertion_points[:, None], next_tokens[:, None])
+    generated = []
+    for _ in range(10):
+        with torch.no_grad():
+            outputs = model(**inputs)
 
-    mask = inputs.attention_mask
-    new_mask_column = torch.zeros((len(inputs.input_ids), 1)).to("cuda:0")
-    new_mask = torch.cat((mask, new_mask_column), dim=1)
-    new_mask.scatter_(1, insertion_points[:, None], torch.ones(2, 1).to("cuda:0"))
+        next_tokens = outputs.logits[:, -1, :].max(axis=-1).indices
 
-    print(next_tokens[:, None].shape)
-    new_inputs = {
-        "input_ids": next_tokens[:, None],
-        "attention_mask": new_mask,
-        "past_key_values": outputs.past_key_values
-    }
+        generated.append(tokenizer.decode(next_tokens))
+        
+        insertion_points = inputs.attention_mask.sum(axis=1, dtype=torch.int64)
+        # new_column = torch.tensor(tokenizer.pad_token_id).repeat(2).to("cuda:0")    
+        # new_inputs = torch.cat((inputs.input_ids, new_column[:, None]), dim=1)
+        # new_inputs.scatter_(1, insertion_points[:, None], next_tokens[:, None])
 
-    with torch.no_grad():
-        outputs = model(**new_inputs)
+        mask = inputs.attention_mask
+        new_mask_column = torch.zeros((len(inputs.input_ids), 1)).to("cuda:0")
+        new_mask = torch.cat((mask, new_mask_column), dim=1)
+        new_mask.scatter_(1, insertion_points[:, None], torch.ones(2, 1).to("cuda:0"))
 
-    next_tokens = outputs.logits[:, -1, :].max(axis=-1).indices
+        inputs.input_ids = next_tokens[:, None]
+        inputs.attention_mask = new_mask
+        inputs.past_key_values = outputs.past_key_values
 
-    print(next_tokens)
+        print(shape(inputs.attention_mask))
+        print(shape(inputs.past_key_values))
+        print()
+
+        # inputs = {
+        #     "input_ids": next_tokens[:, None],
+        #     "attention_mask": new_mask,
+        #     "past_key_values": outputs.past_key_values
+        # }
+
+    print(generated)
 
     exit()
 
