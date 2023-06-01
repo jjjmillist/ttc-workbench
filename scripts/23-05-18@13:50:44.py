@@ -58,7 +58,9 @@ if __name__ == "__main__":
 
 
         inputs = {
-            "input_ids": next_tokens,
-            # "attention_mask": new_mask,
-            "past_key_values": outputs.past_key_values
+            "input_ids": new_inputs,
+            "attention_mask": new_mask,
+            # "past_key_values": outputs.past_key_values
         }
+
+    print(tokenizer.batch_decode(new_inputs, ignore_special_tokens=True))
