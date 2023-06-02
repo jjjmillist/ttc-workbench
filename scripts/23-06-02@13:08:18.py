@@ -58,9 +58,14 @@ if __name__ == "__main__":
     model.to("cuda:0")
 
     prompt = """\
+def common_elements(list1, list2):
+    return set(list1) & set(list2)
+
 # Return the largest number present in both lists
 def largest_common(numbers1, numbers2):
 """
+
+    optimizer = torch.optim.Adam(model.parameters())
 
     n_samples = 4
     max_tokens = 1024
@@ -72,6 +77,10 @@ def largest_common(numbers1, numbers2):
     batch = SampleBatch(n_samples)
     running_sample_indices = list(range(n_samples))
 
+    loss = torch.zeros((1,)).to("cuda")
+
+    logit_history = [[] for n in range(n_samples)]
+    optimizer.zero_grad()
     while prompt_length + n_generated_tokens <= max_tokens:
         outputs = model(**inputs)
 
@@ -85,6 +94,7 @@ def largest_common(numbers1, numbers2):
             accepted = batch.put_token(i, next_token)
             if accepted:
                 next_token_ids.append([sampled_id])
+                logit_history[batch.index_map[i]].append(logits[sampled_id])
 
         n_generated_tokens += 1
 
@@ -106,6 +116,13 @@ def largest_common(numbers1, numbers2):
             "input_ids": torch.tensor(next_token_ids).to("cuda:0"),
             "past_key_values": new_layers
         }
+
+    for sample_history in logit_history:
+        loss += sum(sample_history) / len(sample_history)
+
+    loss /= n_samples
+    loss.backward()
+    optimizer.step()    
 
     for response in batch.samples:
         print(prompt, end="")
